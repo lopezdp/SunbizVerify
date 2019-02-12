@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
 Author: Felipe Zuniga Calier (Felipe-ZC)  
 
@@ -5,46 +7,28 @@ A python script that scrapes the HTML on search.sunbiz.org to determine if a
 given business (in Florida) is an active business entity. 
 '''
 
-'''
-TODO: Input validation!!!!
-
-TODO: Add an option to retrieve inactive businesses.
-
-TODO: Use mechanize to perform a deeper search, the most relevant results are
-shown on the first page I'd like to give the user the option.
-
-TODO: Add a verbose option, combine this with mechanize. If the verbose option 
-is true, then the program will retrieve all active and/or inactive businesses
-along with detailed information about the company. This detailed information
-is found on sunbiz.
-
-TODO: Add option to return data as python list.
-'''
-
 import re
 import requests
 import json
 import argparse
+from bs4 import BeautifulSoup
+from urllib.parse import quote
 
-'''
-Use a regex to get all td tags on the page (html).  Most of the anchor tags
-on the html page are the results to searchQuery, with some exceptions.  Using
-two flags:
-    - M (multiline)
-    - S makes the dot character (.) match any character including newlines.
-'''
+# TODO: XML Bombs
+# TODO: Command Line option to match results with searchQuery instead returning
+# all active businesses found?
+# TODO: 'import from' on all imports?
+# TODO: Review command line options and arguments
 def searchSunBiz(searchQuery):
-    formattedInput = searchQuery.split(' ')
-    formattedInput = list(map(lambda x: re.escape(x), formattedInput))
-    formattedInput = r"|".join(formattedInput)
-    #print( formattedInput)
 
     # f strings are a new construct introduced in python 3.6, allows for string interpolation like in Node and other languages.
-    link = f'http://search.sunbiz.org/Inquiry/CorporationSearch/SearchResults?inquiryType=EntityName&searchNameOrder={searchQuery.upper()}&searchTerm={searchQuery}'
+    formattedInput = quote(searchQuery)
+    link = f'http://search.sunbiz.org/Inquiry/CorporationSearch/SearchResults?inquiryType=EntityName&searchNameOrder={formattedInput.upper()}&searchTerm={formattedInput}'
     html = requests.get(link).text
-    tableRows = re.findall('\<td.*', html) #TODO: Find a better way to parse HTML lol
-    parsed = [] # Holds all matches found, with their index...
-
+    soup = BeautifulSoup(html, 'html.parser')
+    tags = soup.find_all('td')
+    activeBusinesses = []
+ 
     '''
     Look for a match in each <td> element, if a match is found on index i then
     the <td> element that describes the business' status is found on index i +
@@ -53,19 +37,17 @@ def searchSunBiz(searchQuery):
     This is a pretty basic approach to the problem but most of this is hacked
     af, needs review!
     '''
-    for index, row in enumerate(tableRows):
-        # TODO: Revise this regex, maybe use the same strategy 
-        # as in the regex for companyName.
-        if(re.search(formattedInput, row, re.I)):
-             # TODO: Check for out of bounds youo dick!
-            isActive = re.search('Active', tableRows[index + 2]);
-            companyName = re.search('\>[a-zA-Z0-9., ]+\<', row)
-            # Save only active businesses
-            if(companyName and isActive):
-                formattedName = re.sub('<|>', '', companyName.group(0))
-                parsed.append(formattedName)
+    # Find all active business entities...
+    # TODO: MAKE THIS READABLE!!!! WTF!!!!
+    for index, tag in enumerate(tags):
+        if(tag.find('a')): 
+            # TODO: CHECK FOR OUT OF BOUNDS YOU DICK!
+            #if(re.match(formattedInput, str(tag.find('a').string), re.I) and re.match('Active', str(tags[index + 2].string))):
+            if(re.match('Active', str(tags[index + 2].string))):
+                activeBusinesses.append(tag.find('a').string)
+             
+    return activeBusinesses
 
-    return parsed
 
 '''
 Return a list of results, let user
@@ -77,7 +59,7 @@ def main(args):
     # Output results
     if(args.json):
         print(json.dumps({'data' : results}, sort_keys=True,
-                        indent=4, separators=(',', ': ')))
+                         indent=4, separators=(',', ': ')))
     else:
         print(f'Found {len(results)} active businesses while searching for {args.businessName}')
         print("--------- Results ---------")
