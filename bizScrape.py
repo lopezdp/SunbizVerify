@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 '''
-Author: Felipe Zuniga Calier (Felipe-ZC)  
+Author: Felipe Zuniga Calier (Felipe-ZC)
+Reviewer: David P. Lopez  
 
 A python script that scrapes the HTML on search.sunbiz.org to determine if a
 given business (in Florida) is an active business entity. 
