@@ -6,6 +6,7 @@ import re
 import json
 from urllib.parse import quote
 from bs4 import BeautifulSoup
+import ssl
 
 MAX_SIZE = 5
 #TODO MUST BE REFACTORED!
@@ -14,6 +15,12 @@ MAX_SIZE = 5
 def searchState(searchQuery):
     
     browser = mechanize.Browser()
+    browser.set_handle_robots(False)
+    browser.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+
+    context = ssl._create_unverified_context()
+    browser.set_ca_data(context=context)
+
     formattedInput = quote(searchQuery)
     #print('url: ', f'https://businesssearch.sos.ca.gov/CBS/SearchResults?filing=False&SearchType=CORP&SearchCriteria={formattedInput}&SearchSubType=Keyword') 
     #TODO: Remove hard coded url 
